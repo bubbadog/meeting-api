@@ -3,6 +3,12 @@ import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets.readonly",
+    "https://www.googleapis.com/auth/documents.readonly",
+    "https://www.googleapis.com/auth/drive"
+]
+
 # Load credentials
 import os
 import json
@@ -12,11 +18,6 @@ key_json = os.getenv("GOOGLE_CREDENTIALS")  # Retrieve JSON key from environment
 creds_dict = json.loads(key_json)  # Convert JSON string to dictionary
 creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
 
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets.readonly",
-    "https://www.googleapis.com/auth/documents.readonly",
-    "https://www.googleapis.com/auth/drive"
-]
 
 # Initialize Google Sheets client
 sheets_client = gspread.authorize(creds)
