@@ -4,13 +4,19 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
 # Load credentials
-KEY_FILE = "rising-guide-454118-v5-d3cb6719057d.json"  # Ensure this matches the uploaded file name
+import os
+import json
+
+# Load credentials from environment variable
+key_json = os.getenv("GOOGLE_CREDENTIALS")  # Retrieve JSON key from environment
+creds_dict = json.loads(key_json)  # Convert JSON string to dictionary
+creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets.readonly",
     "https://www.googleapis.com/auth/documents.readonly",
     "https://www.googleapis.com/auth/drive"
 ]
-creds = Credentials.from_service_account_file(KEY_FILE, scopes=SCOPES)
 
 # Initialize Google Sheets client
 sheets_client = gspread.authorize(creds)
