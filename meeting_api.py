@@ -8,7 +8,7 @@ from googleapiclient.discovery import build
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets.readonly",
     "https://www.googleapis.com/auth/documents.readonly",
-    "https://www.googleapis.com/auth/drive.metadata.readonly"
+    "https://www.googleapis.com/auth/drive.readonly"
 ]
 
 # Load API credentials from environment variables
@@ -57,17 +57,25 @@ def get_trivia_data():
         committees_planning_sheet_id = ids["committees_planning_sheet"]
 
         # Open Sheets
-        leaderboard_sheet = sheets_client.open_by_key(leaderboard_sheet_id).sheet1
+        worksheets = sheets_client.open_by_key(leaderboard_sheet_id).worksheets()
+        if len(worksheets) > 1:
+            leaderboard_sheet = worksheets[1]  # Get second sheet
+        else:
+            return jsonify({"error": "Leaderboard second sheet does not exist."})
         committees_planning_sheet = sheets_client.open_by_key(committees_planning_sheet_id).sheet1
 
         # Fetch leaderboard data (Google Sheets)
         leaderboard_data = leaderboard_sheet.get_all_records(expected_headers=[
             "Name", "Tickets Sold", "Rank (Tickets Sold)", 
-            "Sponsor Funds ($)", "Rank (Sponsor Funds)", "Donations"
+            "Sponsor Funds ($)", "Rank (Sponsor Funds)", "Donations", "Days Left",
+            "Tickets Sold",	"Sponsor Cash",	"Donations"
         ])
 
         # Fetch committees planning data (Google Sheets)
-        committees_planning_data = committees_planning_sheet.get_all_records()
+        committees_planning_data = committees_planning_sheet.get_all_records(expected_headers=[
+        "Committee Name", "Committee Leads (2)", "Members",	"Purpose", "Responsibilities" 
+])
+
 
         # Fetch meeting summary document (Google Docs)
         meeting_summary_text = fetch_google_doc(meeting_summary_doc_id)
