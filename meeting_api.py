@@ -45,22 +45,21 @@ def fetch_google_doc(doc_id):
 
 # Helper function to fetch and clean unique headers from a sheet
 def get_unique_headers(worksheet):
-    """Retrieve headers from the first row and ensure uniqueness"""
+    """Retrieve headers from the first row and remove duplicates"""
     raw_headers = worksheet.row_values(1)  # Get first row as headers
     headers = []
-    seen = {}
+    seen = set()
 
     for header in raw_headers:
         if not header:  # Handle empty headers
             header = "Unnamed_Column"
         if header in seen:
-            seen[header] += 1
-            header = f"{header}_{seen[header]}"  # Rename duplicate headers
-        else:
-            seen[header] = 0
+            continue  # Skip duplicates instead of renaming
+        seen.add(header)
         headers.append(header)
     
     return headers
+
 
 # Initialize Flask App
 app = Flask(__name__)
@@ -83,11 +82,18 @@ def get_trivia_data():
 
         # Fetch leaderboard data with unique headers
         leaderboard_headers = get_unique_headers(leaderboard_sheet)
+        print("Detected Headers in Leaderboard Sheet:", leaderboard_headers)  # Debugging
         leaderboard_data = leaderboard_sheet.get_all_records(expected_headers=leaderboard_headers)
+
+
+        # Debug: Print detected headers
+        print("Detected Headers in Sheet:", leaderboard_headers)
 
         # Fetch committees planning data with unique headers
         committees_headers = get_unique_headers(committees_planning_sheet)
+        print("Detected Headers in Committees Sheet:", committees_headers)  # Debugging
         committees_planning_data = committees_planning_sheet.get_all_records(expected_headers=committees_headers)
+
 
         # Fetch meeting summary document (Google Docs)
         meeting_summary_text = fetch_google_doc(meeting_summary_doc_id)
