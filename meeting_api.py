@@ -5,12 +5,19 @@ import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets.readonly",
+    "https://www.googleapis.com/auth/documents.readonly",
+    "https://www.googleapis.com/auth/drive.metadata.readonly"
+]
+
 # Load API credentials from environment variables
 key_json = os.getenv("GOOGLE_CREDENTIALS")
 if not key_json:
     raise ValueError("Error: GOOGLE_CREDENTIALS environment variable is missing or empty!")
 creds_dict = json.loads(key_json)
-creds = Credentials.from_service_account_info(creds_dict)
+creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+
 
 # Load Sheets & Docs IDs from environment variable
 ids_json = os.getenv("GOOGLE_SHEET_DOC_IDS")
