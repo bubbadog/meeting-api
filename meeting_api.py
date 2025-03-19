@@ -22,6 +22,22 @@ ids = json.loads(ids_json)
 sheets_client = gspread.authorize(creds)
 docs_service = build("docs", "v1", credentials=creds)
 
+# Helper Function for Fetching Google Docs Content
+def fetch_google_doc(doc_id):
+    """Retrieve text from a Google Doc"""
+    try:
+        doc = docs_service.documents().get(documentId=doc_id).execute()
+        content = []
+        for elem in doc.get("body", {}).get("content", []):
+            if "paragraph" in elem:
+                for text_elem in elem["paragraph"]["elements"]:
+                    if "textRun" in text_elem:
+                        content.append(text_elem["textRun"]["content"])
+        return "\n".join(content).strip()
+
+    except Exception as e:
+        return f"Error fetching document: {str(e)}"
+    
 app = Flask(__name__)
 
 @app.route("/get_trivia_data", methods=["GET"])
