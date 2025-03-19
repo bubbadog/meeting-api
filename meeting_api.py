@@ -18,7 +18,6 @@ if not key_json:
 creds_dict = json.loads(key_json)
 creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
 
-
 # Load Sheets & Docs IDs from environment variable
 ids_json = os.getenv("GOOGLE_SHEET_DOC_IDS")
 if not ids_json:
@@ -41,9 +40,27 @@ def fetch_google_doc(doc_id):
                     if "textRun" in text_elem:
                         content.append(text_elem["textRun"]["content"])
         return "\n".join(content).strip()
-
     except Exception as e:
         return f"Error fetching document: {str(e)}"
+
+# Helper function to fetch and clean unique headers from a sheet
+def get_unique_headers(worksheet):
+    """Retrieve headers from the first row and ensure uniqueness"""
+    raw_headers = worksheet.row_values(1)  # Get first row as headers
+    headers = []
+    seen = {}
+
+    for header in raw_headers:
+        if not header:  # Handle empty headers
+            header = "Unnamed_Column"
+        if header in seen:
+            seen[header] += 1
+            header = f"{header}_{seen[header]}"  # Rename duplicate headers
+        else:
+            seen[header] = 0
+        headers.append(header)
+    
+    return headers
 
 # Initialize Flask App
 app = Flask(__name__)
@@ -64,18 +81,13 @@ def get_trivia_data():
             return jsonify({"error": "Leaderboard second sheet does not exist."})
         committees_planning_sheet = sheets_client.open_by_key(committees_planning_sheet_id).sheet1
 
-        # Fetch leaderboard data (Google Sheets)
-        leaderboard_data = leaderboard_sheet.get_all_records(expected_headers=[
-            "Name", "Tickets Sold", "Rank (Tickets Sold)", 
-            "Sponsor Funds ($)", "Rank (Sponsor Funds)", "Donations", "Days Left",
-            "Tickets Sold",	"Sponsor Cash",	"Donations"
-        ])
+        # Fetch leaderboard data with unique headers
+        leaderboard_headers = get_unique_headers(leaderboard_sheet)
+        leaderboard_data = leaderboard_sheet.get_all_records(expected_headers=leaderboard_headers)
 
-        # Fetch committees planning data (Google Sheets)
-        committees_planning_data = committees_planning_sheet.get_all_records(expected_headers=[
-        "Committee Name", "Committee Leads (2)", "Members",	"Purpose", "Responsibilities" 
-])
-
+        # Fetch committees planning data with unique headers
+        committees_headers = get_unique_headers(committees_planning_sheet)
+        committees_planning_data = committees_planning_sheet.get_all_records(expected_headers=committees_headers)
 
         # Fetch meeting summary document (Google Docs)
         meeting_summary_text = fetch_google_doc(meeting_summary_doc_id)
@@ -91,6 +103,3 @@ def get_trivia_data():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
-
-    
