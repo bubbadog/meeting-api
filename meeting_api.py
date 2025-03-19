@@ -22,7 +22,7 @@ ids = json.loads(ids_json)
 sheets_client = gspread.authorize(creds)
 docs_service = build("docs", "v1", credentials=creds)
 
-# Helper Function for Fetching Google Docs Content
+# Helper function to fetch Google Docs content
 def fetch_google_doc(doc_id):
     """Retrieve text from a Google Doc"""
     try:
@@ -37,7 +37,8 @@ def fetch_google_doc(doc_id):
 
     except Exception as e:
         return f"Error fetching document: {str(e)}"
-    
+
+# Initialize Flask App
 app = Flask(__name__)
 
 @app.route("/get_trivia_data", methods=["GET"])
@@ -45,20 +46,12 @@ def get_trivia_data():
     try:
         # Load IDs dynamically from environment variable
         leaderboard_sheet_id = ids["leaderboard_sheet"]
-        tickets_sheet_id = ids["tickets_sheet"]
-        event_summary_doc_id = ids["event_summary_doc"]
-        meeting_notes_doc_id = ids["meeting_notes_doc"]
-        planning_doc_id = ids["planning_doc"]
+        meeting_summary_doc_id = ids["meeting_summary_doc"]
+        committees_planning_sheet_id = ids["committees_planning_sheet"]
 
         # Open Sheets
         leaderboard_sheet = sheets_client.open_by_key(leaderboard_sheet_id).sheet1
-        tickets_sheet = sheets_client.open_by_key(tickets_sheet_id).sheet1
-
-        # Fetch event summary (Google Sheets)
-        days_until_event = leaderboard_sheet.acell("G2").value
-        tickets_sold = leaderboard_sheet.acell("C3").value
-        sponsor_cash = leaderboard_sheet.acell("D3").value
-        donations = leaderboard_sheet.acell("F3").value
+        committees_planning_sheet = sheets_client.open_by_key(committees_planning_sheet_id).sheet1
 
         # Fetch leaderboard data (Google Sheets)
         leaderboard_data = leaderboard_sheet.get_all_records(expected_headers=[
@@ -66,24 +59,16 @@ def get_trivia_data():
             "Sponsor Funds ($)", "Rank (Sponsor Funds)", "Donations"
         ])
 
-        # Fetch event summary document (Google Docs)
-        event_summary_text = fetch_google_doc(event_summary_doc_id)
-        meeting_notes_text = fetch_google_doc(meeting_notes_doc_id)
-        planning_text = fetch_google_doc(planning_doc_id)
+        # Fetch committees planning data (Google Sheets)
+        committees_planning_data = committees_planning_sheet.get_all_records()
+
+        # Fetch meeting summary document (Google Docs)
+        meeting_summary_text = fetch_google_doc(meeting_summary_doc_id)
 
         return jsonify({
-            "event_summary": {
-                "days_until_event": days_until_event,
-                "tickets_sold": tickets_sold,
-                "sponsor_cash": sponsor_cash,
-                "donations": donations
-            },
             "leaderboard": leaderboard_data,
-            "docs": {
-                "event_summary": event_summary_text,
-                "meeting_notes": meeting_notes_text,
-                "planning": planning_text
-            }
+            "committees_planning": committees_planning_data,
+            "meeting_summary": meeting_summary_text
         })
 
     except Exception as e:
@@ -91,5 +76,6 @@ def get_trivia_data():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
 
     
