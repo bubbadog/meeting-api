@@ -46,14 +46,33 @@ def get_meeting_notes():
         return jsonify({"error": str(e)})
 
 # 📌 API Endpoint: Fetch meeting data from Google Sheets
-@app.route("/get_meeting_data", methods=["GET"])
-def get_meeting_data():
+@app.route("/get_trivia_data", methods=["GET"])
+def get_trivia_data():
     try:
-        SHEET_ID = "1w_2js9ct36PBR3jyCZyE5cXI0Rlzsjt2MPRbEJpFMh4"  # Update with your actual Google Sheet ID
+        SHEET_ID = "your-google-sheet-id"  # Update with your actual Google Sheet ID
         sheet = sheets_client.open_by_key(SHEET_ID).sheet1
-        data = sheet.get_all_records()  # Fetch all rows as dict
 
-        return jsonify({"meeting_data": data})
+        # Fetch event-level summary data (Top section)
+        days_until_event = sheet.acell("G2").value
+        tickets_sold = sheet.acell("C3").value
+        sponsor_cash = sheet.acell("D3").value
+        donations = sheet.acell("F3").value
+
+        # Fetch leaderboard data (Rows 5 and below)
+        data = sheet.get_all_records(expected_headers=[
+            "Name", "Tickets Sold", "Rank (Tickets Sold)", 
+            "Sponsor Funds ($)", "Rank (Sponsor Funds)", "Donations"
+        ])
+
+        return jsonify({
+            "event_summary": {
+                "days_until_event": days_until_event,
+                "tickets_sold": tickets_sold,
+                "sponsor_cash": sponsor_cash,
+                "donations": donations
+            },
+            "leaderboard": data
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)})
